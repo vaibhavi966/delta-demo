@@ -1,29 +1,46 @@
-global.crypto=require('crypto');
-const mongoose=require("mongoose");
-const initData=require("./data.js");
-const Listing=require("../models/listing.js");
+require("dotenv").config({ path: "../.env" });
 
-const mongo_url="mongodb://127.0.0.1:27017/wanderlust";
-main()
-  .then(()=>{
-    console.log("connected to db")
-  })
-  .catch((err)=>{
-    console.log(err)
-  });
-async function main(){
-    await mongoose.connect(mongo_url)
-}
+const mongoose = require("mongoose");
+const initData = require("./data.js");
+const Listing = require("../models/listing.js");
+const User = require("../models/user.js");
 
-const initDB=async()=>{
+async function main() {
+    // Check whether Atlas URL is loaded
+    if (!process.env.ATLASDB_URL) {
+        throw new Error("ATLASDB_URL is not found in .env file");
+    }
+
+    await mongoose.connect(process.env.ATLASDB_URL);
+    console.log("Connected to MongoDB Atlas");
+
+    // Find your existing user
+    const user = await User.findOne({ username: "stranger" });
+
+    if (!user) {
+        throw new Error("User 'stranger' not found in database");
+    }
+
+    console.log("Owner found:", user.username, user._id);
+
+    // Remove existing listings
     await Listing.deleteMany({});
-    const data = initData.data.map((obj) => ({
-    ...obj,
-    owner: "6a683a5d51333c29b4d74ed7"
-}));
 
-await Listing.insertMany(data);
-    console.log("data was initialised successfully");
+    // Add owner to every sample listing
+    const data = initData.data.map((obj) => ({
+        ...obj,
+        owner: user._id
+    }));
+
+    // Insert listings
+    await Listing.insertMany(data);
+
+    console.log("Listings initialized successfully!");
+    console.log(`${data.length} listings added.`);
+
+    await mongoose.connection.close();
 }
 
-initDB(); //calling init remember
+main().catch((err) => {
+    console.log("ERROR:", err);
+});
