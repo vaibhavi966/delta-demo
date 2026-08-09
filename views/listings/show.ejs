@@ -38,7 +38,7 @@
 
 <div class="col-8 offset-3 mb-3">
 <br>
-    <%if(currUser){%>
+    <%if(locals.currUser){%>
     <h4> Leave a review</h4>
     <form action="/listings/<%= listing._id%>/reviews" method="POST" novalidate class="needs-validation" >
         <div class="mb-3 mt-3">
